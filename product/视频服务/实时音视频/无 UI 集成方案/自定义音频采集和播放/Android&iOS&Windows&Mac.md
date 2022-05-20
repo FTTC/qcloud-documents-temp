@@ -22,6 +22,8 @@ self.trtcCloud = [TRTCCloud sharedInstance];
 [self.trtcCloud enableCustomAudioCapture:YES];
 :::
 ::: Windows  C++
+liteav::ITRTCCloud* trtc_cloud = liteav::ITRTCCloud::getTRTCShareInstance();
+trtc_cloud->enableCustomAudioCapture(true);
 :::
 </dx-codeblock>
 
@@ -48,8 +50,13 @@ audioFrame.data = pcmData;
 [self.trtcCloud sendCustomAudioData:audioFrame];
 :::
 ::: Windows  C++
-
-
+liteav::TRTCAudioFrame frame;
+frame.audioFormat = liteav::TRTCAudioFrameFormatPCM;
+frame.length = buffer_size;
+frame.data = array.data();
+frame.sampleRate = 48000;
+frame.channel = 1;
+getTRTCShareInstance()->sendCustomAudioData(&frame);
 :::
 </dx-codeblock>
 
@@ -120,8 +127,24 @@ mTRTCCloud.setAudioFrameListener(new TRTCCloudListener.TRTCAudioFrameListener() 
         NSLog(@"onMixedAllAudioFrame");
 }
 :::
-::: Windows
+::: Windows C++
+// 设置音频数据自定义回调
+liteav::ITRTCCloud* trtc_cloud = liteav::ITRTCCloud::getTRTCShareInstance();
+trtc_cloud->setAudioFrameCallback(callback)
 
+// 音频数据自定义回调
+
+virtual void onCapturedRawAudioFrame(TRTCAudioFrame* frame) {
+}
+
+virtual void onLocalProcessedAudioFrame(TRTCAudioFrame* frame) {
+}
+
+virtual void onPlayAudioFrame(TRTCAudioFrame* frame, const char* userId) {
+}
+
+virtual void onMixedPlayAudioFrame(TRTCAudioFrame* frame) {
+}
 :::
 </dx-codeblock>
 

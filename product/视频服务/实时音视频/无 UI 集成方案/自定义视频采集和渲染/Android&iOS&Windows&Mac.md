@@ -22,6 +22,8 @@ self.trtcCloud = [TRTCCloud sharedInstance];
 [self.trtcCloud enableCustomVideoCapture:TRTCVideoStreamTypeBig enable:YES];
 :::
 ::: Windows  C++
+liteav::ITRTCCloud* trtc_cloud = liteav::ITRTCCloud::getTRTCShareInstance();
+trtc_cloud->enableCustomVideoCapture(TRTCVideoStreamType::TRTCVideoStreamTypeBig, true);
 :::
 </dx-codeblock>
 
@@ -58,7 +60,16 @@ videoFrame.timestamp = timeStamp;
 [[TRTCCloud sharedInstance] sendCustomVideoData:TRTCVideoStreamTypeBig frame:videoFrame];   
 :::
 ::: Windows  C++
-
+// Windows 平台目前只支持 Buffer 的方案，推荐以此方式实现功能。
+liteav::TRTCVideoFrame frame;
+frame.timestamp = getTRTCShareInstance()->generateCustomPTS();
+frame.videoFormat = liteav::TRTCVideoPixelFormat_I420;
+frame.bufferType = liteav::TRTCVideoBufferType_Buffer;
+frame.length = buffer_size;
+frame.data = array.data();
+frame.width = YUV_WIDTH;
+frame.height = YUV_HEIGHT;
+getTRTCShareInstance()->sendCustomVideoData(&frame);
 
 :::
 </dx-codeblock>
@@ -90,8 +101,26 @@ mTRTCCloud.setLocalVideoRenderListener(TRTCCloudDef.TRTC_VIDEO_PIXEL_FORMAT_Text
 self.trtcCloud = [TRTCCloud sharedInstance];
 [self.trtcCloud setLocalVideoRenderDelegate:self pixelFormat:TRTCVideoPixelFormat_NV12 bufferType:TRTCVideoBufferType_PixelBuffer];
 :::
-::: Windows
+::: Windows C++
+```
+// 具体实现请参考 TRTC-API-Example-Qt 中 test_custom_render.cpp 的实现。
+void TestCustomRender::onRenderVideoFrame(
+    const char* userId,
+    liteav::TRTCVideoStreamType streamType,
+    liteav::TRTCVideoFrame* frame) {
+  if (gl_yuv_widget_ == nullptr) {
+    return;
+  }
 
+  if (streamType == liteav::TRTCVideoStreamType::TRTCVideoStreamTypeBig) {
+    // 调整渲染窗口
+    emit renderViewSize(frame->width, frame->height);
+    // 绘制视频帧
+    gl_yuv_widget_->slotShowYuv(reinterpret_cast<uchar*>(frame->data),
+                                frame->width, frame->height);
+  }
+}
+```
 :::
 </dx-codeblock>
 
@@ -129,8 +158,9 @@ mTRTCCloud.setRemoteVideoRenderListener(userId, TRTCCloudDef.TRTC_VIDEO_PIXEL_FO
     });
 }
 :::
-::: Windows
+::: Windows C++
 ```
+// 具体实现请参考 TRTC-API-Example-Qt 中 test_custom_render.cpp 的实现。
 void TestCustomRender::onRenderVideoFrame(
     const char* userId,
     liteav::TRTCVideoStreamType streamType,
